@@ -1,10 +1,9 @@
 //
 // Created by Цыпандин Николай Петрович on 05.01.2022.
 //
-#include "mem.h"
+#include "tests.h"
 
-int main(void) {
-    int c = MAP_FIXED;
-    printf("%d \n", c);
+int main() {
+    run_tests();
     return 0;
 }

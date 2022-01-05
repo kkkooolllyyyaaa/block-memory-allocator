@@ -39,4 +39,5 @@ inline block_capacity capacity_from_size(block_size sz) {
     return (block_capacity) {sz.bytes - offsetof(struct block_header, contents)};
 }
 
+
 #endif
