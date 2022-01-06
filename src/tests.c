@@ -1,6 +1,8 @@
 //
 // Created by Цыпандин Николай Петрович on 05.01.2022.
 //
+
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include "mem_debug.h"
@@ -8,6 +10,12 @@
 #include "mem.h"
 #include "tests.h"
 #include "util.h"
+
+#define BLOCK_SIZE 2000
+#define HEAP_SIZE 16000
+#define newline "\n"
+#define TEST_OK(x, y) "TEST " x " is passed: " y newline
+#define TEST_BAD(x, y) "TEST " x " is failed: " y newline
 
 static struct block_header *head;
 static void *heap;
@@ -23,52 +31,54 @@ static void *heap;
 //}
 
 static void init() {
-    heap = heap_init(16384);
-    if (heap == NULL) {
-        err("Heap init is failed: memory mapping error\n");
-    }
+    debug(" --- TEST HEAP INIT ---" newline);
+    heap = heap_init(HEAP_SIZE);
+    if (heap == NULL)
+        err(TEST_BAD("HEAP INIT", "memory mapping error"));
     head = (struct block_header *) heap;
-    if (head != NULL) {
-        debug_heap(stderr, heap);
-        debug("Heap is successfully created: ok\n");
-    } else {
-        err("Heap init is failed: void* casting error\n");
-    }
+    if (head == NULL)
+        err(TEST_BAD("HEAP INIT", "void* casting error"));
+
+    debug(TEST_OK("HEAP INIT", "OK"));
+    debug(newline);
 }
 
 static void run_test_1() {
-    debug(" --- TEST 1 --- \n\n");
+    debug(" --- TEST 1 --- "newline);
     size_t len = 5, query = sizeof(uint64_t) * len;
-    uint64_t *test_arr = _malloc(query);
+    uint64_t *test_arr = _malloc(query, heap);
+
     if (test_arr == NULL)
-        err("Test 1 is failed: can't allocate memory\n");
+        err(TEST_BAD("1", "can't allocate memory"));
+
     if (head->capacity.bytes != (query) || head->is_free)
-        err("Test 1 is failed: wrong allocation\n");
-    for (size_t i = 0; i < len; ++i) {
+        err(TEST_BAD("1", "wrong allocation"));
+
+    for (size_t i = 0; i < len; ++i)
         test_arr[i] = i * i;
-    }
-    debug_heap(stderr, heap);
-    debug("Test 1 is passed: ok\n");
+    if (test_arr[0] != 0 || test_arr[1] != 1 || test_arr[2] != 4 || test_arr[3] != 9 || test_arr[4] != 16)
+        err(TEST_BAD("1", "can't use allocated memory"));
+
+    debug(TEST_OK("1", "OK"));
+    debug(newline);
 }
 
 static void run_test_2() {
-    debug(" --- TEST 2 --- \n\n");
-//    size_t query = 2000;
-//    void *mem_second = _malloc(query);
-//    void *mem_third = _malloc(query);
-//    _free(mem);
-//    free(mem_second);
-//    free(mem_third);
+    debug(" --- TEST 2 --- "newline);
+
+    debug(newline);
 }
 
 static void run_test_3() {
-    debug(" --- TEST 3 --- \n\n");
+    debug(" --- TEST 3 --- "newline);
 
+    debug(newline);
 }
 
 static void run_test_4() {
-    debug(" --- TEST 4 --- \n\n");
+    debug(" --- TEST 4 --- "newline);
 
+    debug(newline);
 }
 
 void run_tests() {

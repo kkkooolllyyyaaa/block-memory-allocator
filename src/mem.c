@@ -57,7 +57,7 @@ static bool is_bad_map(void const *addr) {
 /*  аллоцировать регион памяти и инициализировать его блоком */
 static struct region alloc_region(void const *addr, size_t query) {
     query = region_actual_size(query);
-    void *reg_addr = map_pages(addr, query, MAP_FIXED);
+    void *reg_addr = map_pages(addr, query, 0);
 
     if (is_bad_map(reg_addr)) {
         reg_addr = map_pages(addr, query, 0);
@@ -179,6 +179,8 @@ static struct block_header *grow_heap(struct block_header *restrict last, size_t
         if (region_is_invalid(&new_region))
             return NULL;
     }
+    if (new_region.addr == block_after(last))
+        new_region.extends = true;
     last->next = new_region.addr;
     return last->next;
 }
@@ -199,8 +201,8 @@ static struct block_header *memalloc(size_t query, struct block_header *heap_sta
     return res.block;
 }
 
-void *_malloc(size_t query) {
-    struct block_header *const addr = memalloc(query, (struct block_header *) HEAP_START);
+void *_malloc(size_t query, void *heap) {
+    struct block_header *const addr = memalloc(query, heap);
     if (addr) return addr->contents;
     else return NULL;
 }
