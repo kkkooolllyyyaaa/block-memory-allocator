@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "mem_debug.h"
 #include "mem_internals.h"
 #include "mem.h"
@@ -122,19 +123,26 @@ static void run_test_4() {
 
 static void run_test_5() {
     debug(" --- TEST 5 --- "newline);
-    void *addr = _malloc(BIG_REGION, heap);
-    if (addr == NULL)
-        err(TEST_BAD("4", "can't allocate big amount of memory"));
 
-    struct block_header *header = get_header_by_addr(addr);
-    if (header == NULL)
-        err(TEST_BAD("4", "can't get header by address"));
-    if (header->is_free)
-        err(TEST_BAD("4", "bad allocate, block is not free"));
-    if (header->capacity.bytes != BIG_REGION)
-        err(TEST_BAD("4", "memory isn't allocated"));
+    while (head->next)
+        head = head->next;
 
-    debug(TEST_OK("4", "OK"));
+    void *addr = ((uint8_t *) head + size_from_capacity(head->capacity).bytes);
+    void *test = mmap(
+            (uint8_t *) (getpagesize() * ((size_t) addr / getpagesize() + (((size_t) addr % getpagesize()) > 0))),
+            1000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    // лень делать блок инит
+    if (!test)
+        err(TEST_BAD("5", "mmap is failed"));
+
+    void *allocated = _malloc(BLOCK_SIZE, test);
+    if (!allocated)
+        err(TEST_BAD("5", "can't allocate memory"));
+    _free(allocated);
+    if (!get_header_by_addr(allocated)->is_free)
+        err(TEST_BAD("5", "can't free memory"));
+    debug_heap(stderr, test);
+    debug(TEST_OK("5", "OK"));
     debug(newline);
 }
 

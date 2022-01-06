@@ -220,9 +220,4 @@ void _free(void *mem) {
     if (!mem) return;
     struct block_header *header = block_get_header(mem);
     header->is_free = true;
-//    while (header) {
-//        if (try_merge_with_next(header))
-//            continue;
-//        header = header->next;
-//    }
 }
