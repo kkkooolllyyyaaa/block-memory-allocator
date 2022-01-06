@@ -39,5 +39,8 @@ inline block_capacity capacity_from_size(block_size sz) {
     return (block_capacity) {sz.bytes - offsetof(struct block_header, contents)};
 }
 
+inline struct block_header *get_header_by_addr(void *addr) {
+    return (struct block_header *) (((uint8_t *) addr) - offsetof(struct block_header, contents));
+}
 
 #endif

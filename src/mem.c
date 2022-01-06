@@ -99,7 +99,7 @@ static bool split_if_too_big(struct block_header *block, size_t query) {
     const block_size next_size = {size_from_capacity(block->capacity).bytes - new_size.bytes};
 
     void *next_addr = split_block_addr(block, new_size);
-    block_init(next_addr, next_size, NULL);
+    block_init(next_addr, next_size, block->next);
     block_init(block, new_size, next_addr);
     return true;
 }
@@ -136,7 +136,7 @@ static bool try_merge_with_next(struct block_header *block) {
 
 struct block_search_result {
     enum {
-        BSR_FOUND_GOOD_BLOCK, BSR_REACHED_END_NOT_FOUND, BSR_CORRUPTED
+        BSR_FOUND_GOOD_BLOCK = 0, BSR_REACHED_END_NOT_FOUND, BSR_CORRUPTED
     } type;
     struct block_header *block;
 };
@@ -149,11 +149,11 @@ static struct block_search_result find_good_or_last(struct block_header *restric
     struct block_header *cur = block;
     struct block_header *last = NULL;
     while (cur) {
-        if (block->is_free && block_is_big_enough(sz, cur))
+        if (cur->is_free && block_is_big_enough(sz, cur))
             return (struct block_search_result) {.type = BSR_FOUND_GOOD_BLOCK, .block = cur};
-        else if (!block_is_big_enough(sz, cur) && try_merge_with_next(block)) {
+        if (try_merge_with_next(cur))
             continue;
-        }
+
         last = cur;
         cur = cur->next;
     }
@@ -166,8 +166,10 @@ static struct block_search_result find_good_or_last(struct block_header *restric
 static struct block_search_result try_memalloc_existing(size_t query, struct block_header *block) {
     query = size_max(query, BLOCK_MIN_CAPACITY);
     struct block_search_result res = find_good_or_last(block, query);
-    if (res.type == BSR_FOUND_GOOD_BLOCK)
+
+    if (res.type == BSR_FOUND_GOOD_BLOCK) {
         split_if_too_big(res.block, query);
+    }
     return res;
 }
 
@@ -188,16 +190,19 @@ static struct block_header *grow_heap(struct block_header *restrict last, size_t
 /*  Реализует основную логику malloc и возвращает заголовок выделенного блока */
 static struct block_header *memalloc(size_t query, struct block_header *heap_start) {
     struct block_search_result res = try_memalloc_existing(query, heap_start);
-    if (res.type == BSR_CORRUPTED)
+
+    if (res.type == BSR_FOUND_GOOD_BLOCK) {
+        res.block->is_free = false;
+        return res.block;
+    } else if (res.type == BSR_CORRUPTED)
         return NULL;
-    if (res.type == BSR_REACHED_END_NOT_FOUND)
+    else if (res.type == BSR_REACHED_END_NOT_FOUND)
         grow_heap(res.block, query);
 
     res = try_memalloc_existing(query, heap_start);
     if (res.type == BSR_REACHED_END_NOT_FOUND || res.type == BSR_CORRUPTED)
         return NULL;
-    if (res.block != NULL)
-        res.block->is_free = false;
+    res.block->is_free = false;
     return res.block;
 }
 
@@ -215,8 +220,9 @@ void _free(void *mem) {
     if (!mem) return;
     struct block_header *header = block_get_header(mem);
     header->is_free = true;
-    while (header) {
-        try_merge_with_next(header);
-        header = header->next;
-    }
+//    while (header) {
+//        if (try_merge_with_next(header))
+//            continue;
+//        header = header->next;
+//    }
 }
