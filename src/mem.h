@@ -2,11 +2,10 @@
 #define _MEM_H_
 
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 #include <stdio.h>
-
 #include <sys/mman.h>
 
 #define HEAP_START ((void*)0x04040000)

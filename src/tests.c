@@ -6,9 +6,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include "mem.h"
 #include "mem_debug.h"
 #include "mem_internals.h"
-#include "mem.h"
 #include "tests.h"
 #include "util.h"
 

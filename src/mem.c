@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "mem_internals.h"
 #include "mem.h"
+#include "mem_internals.h"
 #include "util.h"
 
 void debug_block(struct block_header *b, const char *fmt, ...);
