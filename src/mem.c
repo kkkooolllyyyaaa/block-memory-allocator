@@ -1,12 +1,12 @@
-#include <stdarg.h>
 
 #define _DEFAULT_SOURCE
 
-#include <unistd.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "mem_internals.h"
 #include "mem.h"
