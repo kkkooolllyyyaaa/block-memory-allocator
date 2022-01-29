@@ -54,9 +54,9 @@ static bool is_bad_map(void const *addr) {
 }
 
 /*  аллоцировать регион памяти и инициализировать его блоком */
-static struct region alloc_region ( void const * addr, size_t query ) {
+static struct region alloc_region(void const *addr, size_t query) {
     const size_t actual_size = region_actual_size(query + offsetof(struct block_header, contents));
-    void * reg_addr = map_pages(addr, actual_size, MAP_FIXED_NOREPLACE);
+    void *reg_addr = map_pages(addr, actual_size, MAP_FIXED_NOREPLACE);
     if (is_bad_map(reg_addr)) {
         reg_addr = map_pages(addr, actual_size, 0);
         if (!is_bad_map(reg_addr)) {
@@ -124,10 +124,12 @@ static bool mergeable(struct block_header const *restrict fst, struct block_head
 }
 
 static bool try_merge_with_next(struct block_header *block) {
-    const struct block_header * const nxt = block->next;
+    const struct block_header *const nxt = block->next;
     if (nxt == NULL) return false;
     if (mergeable(block, nxt)) {
-        block_init(block, size_from_capacity((block_capacity) {.bytes = size_from_capacity(nxt->capacity).bytes + block->capacity.bytes}), nxt->next);
+        block_init(block, size_from_capacity(
+                           (block_capacity) {.bytes = size_from_capacity(nxt->capacity).bytes + block->capacity.bytes}),
+                   nxt->next);
         return true;
     }
     return false;
@@ -150,9 +152,11 @@ static struct block_search_result find_good_or_last(struct block_header *restric
         return (struct block_search_result) {.type = BSR_CORRUPTED, .block = NULL};
 
     while (true) {
-        if (try_merge_with_next(block)) {continue;}
-        if (block_is_big_enough(sz, block) && block->is_free == true) {return (struct block_search_result) {BSR_FOUND_GOOD_BLOCK, block};}
-        if (block->next == NULL) {break;}
+        if (try_merge_with_next(block)) { continue; }
+        if (block_is_big_enough(sz, block) && block->is_free == true) {
+            return (struct block_search_result) {BSR_FOUND_GOOD_BLOCK, block};
+        }
+        if (block->next == NULL) { break; }
         block = block->next;
     }
     return (struct block_search_result) {BSR_REACHED_END_NOT_FOUND, block};
@@ -215,7 +219,9 @@ static struct block_header *block_get_header(void *contents) {
 }
 
 void _free(void *mem) {
-    if (!mem) return;
+    if (!mem)
+        return;
     struct block_header *header = block_get_header(mem);
     header->is_free = true;
+    while (try_merge_with_next(header));
 }
