@@ -1,4 +1,3 @@
-
 #define _DEFAULT_SOURCE
 
 #include <assert.h>
@@ -125,15 +124,13 @@ static bool mergeable(struct block_header const *restrict fst, struct block_head
 }
 
 static bool try_merge_with_next(struct block_header *block) {
-    const struct block_header *const nxt = block->next;
-    if (nxt == NULL) return false;
-    if (mergeable(block, nxt)) {
-        block_init(block, size_from_capacity(
-                           (block_capacity) {.bytes = size_from_capacity(nxt->capacity).bytes + block->capacity.bytes}),
-                   block->next);
-        return true;
-    }
-    return false;
+    if (!block->next)
+        return false;
+    if (!mergeable(block, block->next))
+        return false;
+    block->capacity.bytes += size_from_capacity(block->next->capacity).bytes;
+    block->next = block->next->next;
+    return true;
 }
 
 
@@ -195,12 +192,18 @@ static struct block_header *grow_heap(struct block_header *restrict last, size_t
 
 /*  Реализует основную логику malloc и возвращает заголовок выделенного блока */
 static struct block_header *memalloc(size_t query, struct block_header *heap_start) {
+    /*  ??? */
     const size_t actual_size = size_max(BLOCK_MIN_CAPACITY, query);
     struct block_search_result res = try_memalloc_existing(actual_size, heap_start);
+    if (res.type == BSR_CORRUPTED) {
+        return NULL;
+    }
     if (res.type == BSR_REACHED_END_NOT_FOUND) {
-        if (grow_heap(res.block, actual_size) == NULL) return NULL;
+        if (grow_heap(res.block, actual_size) == NULL)
+            return NULL;
         res = try_memalloc_existing(actual_size, res.block);
-        if (res.type != BSR_FOUND_GOOD_BLOCK) return NULL;
+        if (res.type != BSR_FOUND_GOOD_BLOCK)
+            return NULL;
     }
     return res.block;
 
