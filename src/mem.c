@@ -178,17 +178,17 @@ static struct block_search_result try_memalloc_existing(size_t query, struct blo
 
 
 static struct block_header *grow_heap(struct block_header *restrict last, size_t query) {
-    const void *new_region_addr = block_after(last);
-    struct region new_region = alloc_region(new_region_addr, query);
-    if (region_is_invalid(&new_region)) {
-        new_region = alloc_region(NULL, query);
-        if (region_is_invalid(&new_region))
-            return NULL;
+    const void * new_region_addr = block_after(last);
+    const struct region new_region = alloc_region(new_region_addr, query);
+    if (!region_is_invalid(&new_region)) {
+        last->next = (struct block_header *) new_region.addr;
+        if (try_merge_with_next(last)) {
+            return last;
+        }
+        return (struct block_header *) new_region.addr;
     }
-    last->next = (struct block_header *) new_region.addr;
-    if (try_merge_with_next(last))
-        return last;
-    return (struct block_header *) new_region.addr;
+    return NULL;
+
 }
 
 /*  Реализует основную логику malloc и возвращает заголовок выделенного блока */
