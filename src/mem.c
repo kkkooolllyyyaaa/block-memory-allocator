@@ -47,7 +47,7 @@ static size_t region_actual_size(size_t query) {
 }
 
 static void *map_pages(void const *addr, size_t length, int additional_flags) {
-    return mmap((void *) addr, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | additional_flags, 0, 0);
+    return mmap((void *) addr, length, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | additional_flags, -1, 0);
 }
 
 static bool is_bad_map(void const *addr) {
@@ -184,7 +184,7 @@ static struct block_header *grow_heap(struct block_header *restrict last, size_t
     if (new_region.addr == block_after(last))
         new_region.extends = true;
     last->next = new_region.addr;
-    return last->next;
+    return last;
 }
 
 /*  Реализует основную логику malloc и возвращает заголовок выделенного блока */
