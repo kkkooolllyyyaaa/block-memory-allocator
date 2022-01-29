@@ -55,19 +55,19 @@ static bool is_bad_map(void const *addr) {
 
 /*  аллоцировать регион памяти и инициализировать его блоком */
 static struct region alloc_region ( void const * addr, size_t query ) {
-    const size_t region_actual_size = region_actual_size(query + offsetof(struct block_header, contents));
-    void * reg_addr = map_pages(addr, region_actual_size, MAP_FIXED_NOREPLACE);
+    const size_t actual_size = region_actual_size(query + offsetof(struct block_header, contents));
+    void * reg_addr = map_pages(addr, actual_size, MAP_FIXED_NOREPLACE);
     if (is_bad_map(reg_addr)) {
-        reg_addr = map_pages(addr, region_actual_size, 0);
+        reg_addr = map_pages(addr, actual_size, 0);
         if (!is_bad_map(reg_addr)) {
-            const struct region region = (struct region) {.addr = reg_addr, .size = region_actual_size, false};
-            block_init(reg_addr, (block_size) {.bytes = region_actual_size}, NULL);
+            const struct region region = (struct region) {.addr = reg_addr, .size = actual_size, false};
+            block_init(reg_addr, (block_size) {.bytes = actual_size}, NULL);
             return region;
         }
         return REGION_INVALID;
     }
-    const struct region region = (struct region) {.addr = reg_addr, .size = region_actual_size, true};
-    block_init(reg_addr, (block_size) {.bytes = region_actual_size}, NULL);
+    const struct region region = (struct region) {.addr = reg_addr, .size = actual_size, true};
+    block_init(reg_addr, (block_size) {.bytes = actual_size}, NULL);
     return region;
 }
 
