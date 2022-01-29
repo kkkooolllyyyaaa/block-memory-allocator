@@ -94,16 +94,20 @@ static void *split_block_addr(struct block_header *restrict block, block_size ne
 }
 
 static bool split_if_too_big(struct block_header *block, size_t query) {
-    if (!block_splittable(block, query))
+    if (block_splittable(block, query)) {
+        block_size new_size = size_from_capacity((block_capacity) {.bytes = query});
+        block_size next_size = size_from_capacity((block_capacity) {.bytes = block->capacity.bytes - new_size.bytes});
+        void *next_addr = (void *) (block->contents + query);
+        struct block_header *next = block->next;
+        block_init(block, new_size, (struct block_header *) next_addr);
+        block_init((struct block_header *) next_addr, next_size, next);
+        return true;
+    }
+    if (block->is_free == false)
         return false;
+    block_init(block, size_from_capacity(block->capacity), block->next);
+    return false;
 
-    const block_size new_size = {query + offsetof(struct block_header, contents)};
-    const block_size next_size = {size_from_capacity(block->capacity).bytes - new_size.bytes};
-
-    void *next_addr = split_block_addr(block, new_size);
-    block_init(next_addr, next_size, block->next);
-    block_init(block, new_size, next_addr);
-    return true;
 }
 
 
