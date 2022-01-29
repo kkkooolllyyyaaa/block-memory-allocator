@@ -89,10 +89,6 @@ static bool block_splittable(struct block_header *restrict block, size_t query) 
            query + offsetof(struct block_header, contents) + BLOCK_MIN_CAPACITY <= block->capacity.bytes;
 }
 
-static void *split_block_addr(struct block_header *restrict block, block_size new_size) {
-    return (void *) ((uint8_t *) block + new_size.bytes);
-}
-
 static bool split_if_too_big(struct block_header *block, size_t query) {
     if (block_splittable(block, query)) {
         block_size new_size = size_from_capacity((block_capacity) {.bytes = query});
