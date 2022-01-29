@@ -57,7 +57,7 @@ static bool is_bad_map(void const *addr) {
 /*  аллоцировать регион памяти и инициализировать его блоком */
 static struct region alloc_region(void const *addr, size_t query) {
     query = region_actual_size(query);
-    void *reg_addr = map_pages(addr, query, 0);
+    void *reg_addr = map_pages(addr, query, MAP_FIXED_NOREPLACE);
 
     if (is_bad_map(reg_addr)) {
         reg_addr = map_pages(addr, query, 0);
