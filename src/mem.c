@@ -56,15 +56,18 @@ static bool is_bad_map(void const *addr) {
 
 /*  аллоцировать регион памяти и инициализировать его блоком */
 static struct region alloc_region(void const *addr, size_t query) {
-    query = region_actual_size(query);
+    query = region_actual_size(query + offsetof(struct block_header, contents));
     void *reg_addr = map_pages(addr, query, MAP_FIXED_NOREPLACE);
 
     if (is_bad_map(reg_addr)) {
         reg_addr = map_pages(addr, query, 0);
         if (is_bad_map(reg_addr))
             return REGION_INVALID;
+        const struct region new_region = {.addr = reg_addr, .size = query, false};
+        block_init(reg_addr, (block_size) {query}, NULL);
+        return new_region;
     }
-    struct region new_region = {.addr = reg_addr, .size = query, .extends = false};
+    const struct region new_region = {.addr = reg_addr, .size = query, true};
     block_init(reg_addr, (block_size) {query}, NULL);
     return new_region;
 }
@@ -175,22 +178,23 @@ static struct block_search_result try_memalloc_existing(size_t query, struct blo
 
 
 static struct block_header *grow_heap(struct block_header *restrict last, size_t query) {
-    struct region new_region = alloc_region(block_after(last), query);
+    const void *new_region_addr = block_after(last);
+    struct region new_region = alloc_region(new_region_addr, query);
     if (region_is_invalid(&new_region)) {
         new_region = alloc_region(NULL, query);
         if (region_is_invalid(&new_region))
             return NULL;
     }
-    if (new_region.addr == block_after(last))
-        new_region.extends = true;
-    last->next = new_region.addr;
-    return last;
+    last->next = (struct block_header *) new_region.addr;
+    if (try_merge_with_next(last))
+        return last;
+    return (struct block_header *) new_region.addr;
 }
 
 /*  Реализует основную логику malloc и возвращает заголовок выделенного блока */
 static struct block_header *memalloc(size_t query, struct block_header *heap_start) {
-    struct block_search_result res = try_memalloc_existing(query, heap_start);
-
+    const size_t actual_size = size_max(BLOCK_MIN_CAPACITY, query);
+    struct block_search_result res = try_memalloc_existing(actual_size, heap_start);
     if (res.type == BSR_FOUND_GOOD_BLOCK) {
         res.block->is_free = false;
         return res.block;
@@ -198,7 +202,6 @@ static struct block_header *memalloc(size_t query, struct block_header *heap_sta
         return NULL;
     else if (res.type == BSR_REACHED_END_NOT_FOUND)
         grow_heap(res.block, query);
-
     res = try_memalloc_existing(query, heap_start);
     if (res.type == BSR_REACHED_END_NOT_FOUND || res.type == BSR_CORRUPTED)
         return NULL;
