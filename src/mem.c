@@ -167,11 +167,11 @@ static struct block_search_result find_good_or_last(struct block_header *restric
 /*  Попробовать выделить память в куче начиная с блока `block` не пытаясь расширить кучу
  Можно переиспользовать как только кучу расширили. */
 static struct block_search_result try_memalloc_existing(size_t query, struct block_header *block) {
-    query = size_max(query, BLOCK_MIN_CAPACITY);
     struct block_search_result res = find_good_or_last(block, query);
 
     if (res.type == BSR_FOUND_GOOD_BLOCK) {
         split_if_too_big(res.block, query);
+        res.block->is_free = false;
     }
     return res;
 }
@@ -201,8 +201,8 @@ static struct block_header *memalloc(size_t query, struct block_header *heap_sta
     } else if (res.type == BSR_CORRUPTED)
         return NULL;
     else if (res.type == BSR_REACHED_END_NOT_FOUND)
-        grow_heap(res.block, query);
-    res = try_memalloc_existing(query, heap_start);
+        grow_heap(res.block, actual_size);
+    res = try_memalloc_existing(actual_size, heap_start);
     if (res.type == BSR_REACHED_END_NOT_FOUND || res.type == BSR_CORRUPTED)
         return NULL;
     res.block->is_free = false;
